@@ -1,6 +1,6 @@
 const std = @import("std");
 const vk = @import("vulkan");
-const c = @import("c.zig");
+const glfw = @import("glfw");
 const resources = @import("resources");
 const GraphicsContext = @import("graphics_context.zig").GraphicsContext;
 const Swapchain = @import("swapchain.zig").Swapchain;
@@ -41,20 +41,14 @@ const vertices = [_]Vertex{
 };
 
 pub fn main() !void {
-    if (c.glfwInit() != c.GLFW_TRUE) return error.GlfwInitFailed;
-    defer c.glfwTerminate();
+    try glfw.init();
+    defer glfw.terminate();
 
     var extent = vk.Extent2D{ .width = 800, .height = 600 };
 
-    c.glfwWindowHint(c.GLFW_CLIENT_API, c.GLFW_NO_API);
-    const window = c.glfwCreateWindow(
-        @intCast(c_int, extent.width),
-        @intCast(c_int, extent.height),
-        app_name,
-        null,
-        null,
-    ) orelse return error.WindowInitFailed;
-    defer c.glfwDestroyWindow(window);
+    try glfw.Window.hint(.client_api, glfw.no_api);
+    const window = try glfw.Window.create(extent.width, extent.height, app_name, null, null);
+    defer window.destroy();
 
     const allocator = std.heap.page_allocator;
 
@@ -118,7 +112,7 @@ pub fn main() !void {
     );
     defer destroyCommandBuffers(&gc, pool, allocator, cmdbufs);
 
-    while (c.glfwWindowShouldClose(window) == c.GLFW_FALSE) {
+    while (!window.shouldClose()) {
         const cmdbuf = cmdbufs[swapchain.image_index];
 
         const state = swapchain.present(cmdbuf) catch |err| switch (err) {
@@ -127,11 +121,9 @@ pub fn main() !void {
         };
 
         if (state == .suboptimal) {
-            var w: c_int = undefined;
-            var h: c_int = undefined;
-            c.glfwGetWindowSize(window, &w, &h);
-            extent.width = @intCast(u32, w);
-            extent.height = @intCast(u32, h);
+            const size = try window.getSize();
+            extent.width = @intCast(u32, size.width);
+            extent.height = @intCast(u32, size.height);
             try swapchain.recreate(extent);
 
             destroyFramebuffers(&gc, allocator, framebuffers);
@@ -150,8 +142,7 @@ pub fn main() !void {
             );
         }
 
-        c.glfwSwapBuffers(window);
-        c.glfwPollEvents();
+        try glfw.pollEvents();
     }
 
     try swapchain.waitForAllFences();

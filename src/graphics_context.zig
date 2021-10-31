@@ -1,6 +1,6 @@
 const std = @import("std");
 const vk = @import("vulkan");
-const c = @import("c.zig");
+const glfw = @import("glfw");
 const Allocator = std.mem.Allocator;
 
 const required_device_extensions = [_][]const u8{vk.extension_info.khr_swapchain.name};
@@ -93,12 +93,12 @@ pub const GraphicsContext = struct {
     graphics_queue: Queue,
     present_queue: Queue,
 
-    pub fn init(allocator: *Allocator, app_name: [*:0]const u8, window: *c.GLFWwindow) !GraphicsContext {
+    pub fn init(allocator: *Allocator, app_name: [*:0]const u8, window: glfw.Window) !GraphicsContext {
         var self: GraphicsContext = undefined;
-        self.vkb = try BaseDispatch.load(c.glfwGetInstanceProcAddress);
+        const vk_proc = @ptrCast(fn(instance: vk.Instance, procname: [*:0]const u8) vk.PfnVoidFunction, glfw.getInstanceProcAddress);
+        self.vkb = try BaseDispatch.load(vk_proc);
 
-        var glfw_exts_count: u32 = 0;
-        const glfw_exts = c.glfwGetRequiredInstanceExtensions(&glfw_exts_count);
+        const glfw_exts = try glfw.getRequiredInstanceExtensions();
 
         const app_info = vk.ApplicationInfo{
             .p_application_name = app_name,
@@ -113,11 +113,11 @@ pub const GraphicsContext = struct {
             .p_application_info = &app_info,
             .enabled_layer_count = 0,
             .pp_enabled_layer_names = undefined,
-            .enabled_extension_count = glfw_exts_count,
-            .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, glfw_exts),
+            .enabled_extension_count = @intCast(u32, glfw_exts.len),
+            .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &glfw_exts[0]),
         }, null);
 
-        self.vki = try InstanceDispatch.load(self.instance, c.glfwGetInstanceProcAddress);
+        self.vki = try InstanceDispatch.load(self.instance, vk_proc);
         errdefer self.vki.destroyInstance(self.instance, null);
 
         self.surface = try createSurface(self.instance, window);
@@ -179,9 +179,9 @@ pub const Queue = struct {
     }
 };
 
-fn createSurface(instance: vk.Instance, window: *c.GLFWwindow) !vk.SurfaceKHR {
+fn createSurface(instance: vk.Instance, window: glfw.Window) !vk.SurfaceKHR {
     var surface: vk.SurfaceKHR = undefined;
-    if (c.glfwCreateWindowSurface(instance, window, null, &surface) != .success) {
+    if ((try glfw.createWindowSurface(instance, window, null, &surface)) != @enumToInt(vk.Result.success)) {
         return error.SurfaceInitFailed;
     }
 

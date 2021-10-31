@@ -2,7 +2,7 @@
 
 This is an example for how to use [mach-glfw](https://github.com/hexops/mach-glfw) and [vulkan-zig](https://github.com/snektron/vulkan-zig) together to create a basic Vulkan window.
 
-This is nearly a 1:1 copy of the [vulkan-zig example](https://github.com/snektron/vulkan-zig), the only difference is using [mach-glfw](https://github.com/hexops/mach-glfw) and MoltenVK on MacOS.
+This is nearly a 1:1 copy of the [vulkan-zig example](https://github.com/snektron/vulkan-zig) by @snektron, the only difference is using [mach-glfw](https://github.com/hexops/mach-glfw) and MoltenVK on MacOS.
 
 ## Getting started
 

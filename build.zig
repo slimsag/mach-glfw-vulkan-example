@@ -27,16 +27,6 @@ pub fn build(b: *std.build.Builder) void {
     res.addShader("triangle_frag", "shaders/triangle.frag");
     exe.addPackage(res.package);
 
-    // Link MoltenVK if targeting MacOS.
-    const final_target = (std.zig.system.NativeTargetInfo.detect(b.allocator, exe.target) catch unreachable).target;
-    switch (final_target.os.tag) {
-        .macos => {
-            exe.addLibPath("/opt/homebrew/Cellar/molten-vk/1.1.5/lib");
-            exe.linkSystemLibrary("MoltenVK");
-        },
-        else => {},
-    }
-
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {

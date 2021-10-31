@@ -6,7 +6,7 @@ const GraphicsContext = @import("graphics_context.zig").GraphicsContext;
 const Swapchain = @import("swapchain.zig").Swapchain;
 const Allocator = std.mem.Allocator;
 
-const app_name = "vulkan-zig triangle example";
+const app_name = "mach-glfw + vulkan-zig = triangle";
 
 const Vertex = struct {
     const binding_description = vk.VertexInputBindingDescription{

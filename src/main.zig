@@ -41,13 +41,14 @@ const vertices = [_]Vertex{
 };
 
 pub fn main() !void {
-    try glfw.init();
+    try glfw.init(.{});
     defer glfw.terminate();
 
     var extent = vk.Extent2D{ .width = 800, .height = 600 };
 
-    try glfw.Window.hint(.client_api, glfw.no_api);
-    const window = try glfw.Window.create(extent.width, extent.height, app_name, null, null);
+    const window = try glfw.Window.create(extent.width, extent.height, app_name, null, null, .{
+        .client_api = .no_api,
+    });
     defer window.destroy();
 
     const allocator = std.heap.page_allocator;
@@ -215,7 +216,7 @@ fn copyBuffer(gc: *const GraphicsContext, pool: vk.CommandPool, dst: vk.Buffer, 
 fn createCommandBuffers(
     gc: *const GraphicsContext,
     pool: vk.CommandPool,
-    allocator: *Allocator,
+    allocator: Allocator,
     buffer: vk.Buffer,
     extent: vk.Extent2D,
     render_pass: vk.RenderPass,
@@ -282,12 +283,12 @@ fn createCommandBuffers(
     return cmdbufs;
 }
 
-fn destroyCommandBuffers(gc: *const GraphicsContext, pool: vk.CommandPool, allocator: *Allocator, cmdbufs: []vk.CommandBuffer) void {
+fn destroyCommandBuffers(gc: *const GraphicsContext, pool: vk.CommandPool, allocator: Allocator, cmdbufs: []vk.CommandBuffer) void {
     gc.vkd.freeCommandBuffers(gc.dev, pool, @truncate(u32, cmdbufs.len), cmdbufs.ptr);
     allocator.free(cmdbufs);
 }
 
-fn createFramebuffers(gc: *const GraphicsContext, allocator: *Allocator, render_pass: vk.RenderPass, swapchain: Swapchain) ![]vk.Framebuffer {
+fn createFramebuffers(gc: *const GraphicsContext, allocator: Allocator, render_pass: vk.RenderPass, swapchain: Swapchain) ![]vk.Framebuffer {
     const framebuffers = try allocator.alloc(vk.Framebuffer, swapchain.swap_images.len);
     errdefer allocator.free(framebuffers);
 
@@ -310,7 +311,7 @@ fn createFramebuffers(gc: *const GraphicsContext, allocator: *Allocator, render_
     return framebuffers;
 }
 
-fn destroyFramebuffers(gc: *const GraphicsContext, allocator: *Allocator, framebuffers: []const vk.Framebuffer) void {
+fn destroyFramebuffers(gc: *const GraphicsContext, allocator: Allocator, framebuffers: []const vk.Framebuffer) void {
     for (framebuffers) |fb| gc.vkd.destroyFramebuffer(gc.dev, fb, null);
     allocator.free(framebuffers);
 }

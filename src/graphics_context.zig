@@ -95,7 +95,7 @@ pub const GraphicsContext = struct {
 
     pub fn init(allocator: Allocator, app_name: [*:0]const u8, window: glfw.Window) !GraphicsContext {
         var self: GraphicsContext = undefined;
-        const vk_proc = @ptrCast(fn(instance: vk.Instance, procname: [*:0]const u8) callconv(.C) vk.PfnVoidFunction, glfw.getInstanceProcAddress);
+        const vk_proc = @ptrCast(fn (instance: vk.Instance, procname: [*:0]const u8) callconv(.C) vk.PfnVoidFunction, glfw.getInstanceProcAddress);
         self.vkb = try BaseDispatch.load(vk_proc);
 
         const glfw_exts = try glfw.getRequiredInstanceExtensions();
@@ -108,7 +108,7 @@ pub const GraphicsContext = struct {
             .api_version = vk.API_VERSION_1_2,
         };
 
-        self.instance = try self.vkb.createInstance(.{
+        self.instance = try self.vkb.createInstance(&.{
             .flags = .{},
             .p_application_info = &app_info,
             .enabled_layer_count = 0,
@@ -131,7 +131,7 @@ pub const GraphicsContext = struct {
         errdefer self.vkd.destroyDevice(self.dev, null);
 
         self.graphics_queue = Queue.init(self.vkd, self.dev, candidate.queues.graphics_family);
-        self.present_queue = Queue.init(self.vkd, self.dev, candidate.queues.graphics_family);
+        self.present_queue = Queue.init(self.vkd, self.dev, candidate.queues.present_family);
 
         self.mem_props = self.vki.getPhysicalDeviceMemoryProperties(self.pdev);
 
@@ -160,7 +160,7 @@ pub const GraphicsContext = struct {
     }
 
     pub fn allocate(self: GraphicsContext, requirements: vk.MemoryRequirements, flags: vk.MemoryPropertyFlags) !vk.DeviceMemory {
-        return try self.vkd.allocateMemory(self.dev, .{
+        return try self.vkd.allocateMemory(self.dev, &.{
             .allocation_size = requirements.size,
             .memory_type_index = try self.findMemoryTypeIndex(requirements.memory_type_bits, flags),
         }, null);
@@ -210,7 +210,7 @@ fn initializeCandidate(vki: InstanceDispatch, candidate: DeviceCandidate) !vk.De
     else
         2;
 
-    return try vki.createDevice(candidate.pdev, .{
+    return try vki.createDevice(candidate.pdev, &.{
         .flags = .{},
         .queue_create_info_count = queue_count,
         .p_queue_create_infos = &qci,

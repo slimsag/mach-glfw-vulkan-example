@@ -40,15 +40,27 @@ const vertices = [_]Vertex{
     .{ .pos = .{ -0.5, 0.5 }, .color = .{ 0, 0, 1 } },
 };
 
+/// Default GLFW error handling callback
+fn errorCallback(error_code: glfw.ErrorCode, description: [:0]const u8) void {
+    std.log.err("glfw: {}: {s}\n", .{ error_code, description });
+}
+
 pub fn main() !void {
-    try glfw.init(.{});
+    glfw.setErrorCallback(errorCallback);
+    if (!glfw.init(.{})) {
+        std.log.err("failed to initialize GLFW: {?s}", .{glfw.getErrorString()});
+        std.process.exit(1);
+    }
     defer glfw.terminate();
 
     var extent = vk.Extent2D{ .width = 800, .height = 600 };
 
-    const window = try glfw.Window.create(extent.width, extent.height, app_name, null, null, .{
+    const window = glfw.Window.create(extent.width, extent.height, app_name, null, null, .{
         .client_api = .no_api,
-    });
+    }) orelse {
+        std.log.err("failed to create GLFW window: {?s}", .{glfw.getErrorString()});
+        std.process.exit(1);
+    };
     defer window.destroy();
 
     const allocator = std.heap.page_allocator;
@@ -122,7 +134,7 @@ pub fn main() !void {
         };
 
         if (state == .suboptimal) {
-            const size = try window.getSize();
+            const size = window.getSize();
             extent.width = @intCast(u32, size.width);
             extent.height = @intCast(u32, size.height);
             try swapchain.recreate(extent);
@@ -143,7 +155,7 @@ pub fn main() !void {
             );
         }
 
-        try glfw.pollEvents();
+        glfw.pollEvents();
     }
 
     try swapchain.waitForAllFences();
@@ -169,7 +181,7 @@ fn uploadVertices(gc: *const GraphicsContext, pool: vk.CommandPool, buffer: vk.B
         defer gc.vkd.unmapMemory(gc.dev, staging_memory);
 
         const gpu_vertices = @ptrCast([*]Vertex, @alignCast(@alignOf(Vertex), data));
-        for (vertices) |vertex, i| {
+        for (vertices, 0..) |vertex, i| {
             gpu_vertices[i] = vertex;
         }
     }
@@ -251,7 +263,7 @@ fn createCommandBuffers(
         .extent = extent,
     };
 
-    for (cmdbufs) |cmdbuf, i| {
+    for (cmdbufs, 0..) |cmdbuf, i| {
         try gc.vkd.beginCommandBuffer(cmdbuf, &.{
             .flags = .{},
             .p_inheritance_info = null,

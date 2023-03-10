@@ -4,28 +4,35 @@ const glfw = @import("libs/mach-glfw/build.zig");
 const vkgen = @import("libs/vulkan-zig/generator/index.zig");
 const zigvulkan = @import("libs/vulkan-zig/build.zig");
 
-pub fn build(b: *std.build.Builder) void {
+pub fn build(b: *std.build.Builder) !void {
     const target = b.standardTargetOptions(.{});
-    const mode = b.standardReleaseOptions();
+    const mode = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable("mach-glfw-vulkan-example", "src/main.zig");
-    exe.setTarget(target);
-    exe.setBuildMode(mode);
+    const exe = b.addExecutable(.{
+        .name = "mach-glfw-vulkan-example", 
+        .root_source_file = .{ .path = "src/main.zig"},
+        .target = target,
+        .optimize = mode
+    });
     exe.install();
 
     // vulkan-zig: Create a step that generates vk.zig (stored in zig-cache) from the provided vulkan registry.
-    const gen = vkgen.VkGenerateStep.init(b, "libs/vulkan-zig/examples/vk.xml", "vk.zig");
-    exe.addPackage(gen.package);
+    const gen = vkgen.VkGenerateStep.create(b, "libs/vulkan-zig/examples/vk.xml");
+    exe.addModule("vulkan", gen.getModule());
 
     // mach-glfw
-    exe.addPackagePath("glfw", "libs/mach-glfw/src/main.zig");
-    glfw.link(b, exe, .{});
+    exe.addModule("glfw", glfw.module(b));
+    try glfw.link(b, exe, .{});
 
     // shader resources, to be compiled using glslc
-    const res = zigvulkan.ResourceGenStep.init(b, "resources.zig");
-    res.addShader("triangle_vert", "shaders/triangle.vert");
-    res.addShader("triangle_frag", "shaders/triangle.frag");
-    exe.addPackage(res.package);
+    const shaders = vkgen.ShaderCompileStep.create(
+        b,
+        &[_][]const u8{ "glslc", "--target-env=vulkan1.2" },
+        "-o",
+    );
+    shaders.add("triangle_vert", "shaders/triangle.vert", .{});
+    shaders.add("triangle_frag", "shaders/triangle.frag", .{});
+    exe.addModule("resources", shaders.getModule());
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());

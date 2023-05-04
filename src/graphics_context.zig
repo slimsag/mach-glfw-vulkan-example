@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const vk = @import("vulkan");
 const glfw = @import("glfw");
 const Allocator = std.mem.Allocator;
@@ -13,6 +14,7 @@ const optional_device_extensions = [_][*:0]const u8{
 
 const optional_instance_extensions = [_][*:0]const u8{
     vk.extension_info.khr_portability_enumeration.name,
+    vk.extension_info.khr_get_physical_device_properties_2.name,
 };
 
 const BaseDispatch = vk.BaseWrapper(.{
@@ -132,7 +134,8 @@ pub const GraphicsContext = struct {
                 const len = std.mem.indexOfScalar(u8, &prop.extension_name, 0).?;
                 const prop_ext_name = prop.extension_name[0..len];
                 if (std.mem.eql(u8, prop_ext_name, std.mem.span(extension_name))) {
-                    try instance_extensions.append(@ptrCast([*:0]const u8, prop_ext_name));
+                    try instance_extensions.append(@ptrCast([*:0]const u8, extension_name));
+                    break;
                 }
             }
         }
@@ -146,9 +149,9 @@ pub const GraphicsContext = struct {
         };
 
         self.instance = try self.vkb.createInstance(&.{
-            .flags = .{
+            .flags = if (builtin.os.tag == .macos) .{
                 .enumerate_portability_bit_khr = true,
-            },
+            } else .{},
             .p_application_info = &app_info,
             .enabled_layer_count = 0,
             .pp_enabled_layer_names = undefined,
@@ -266,6 +269,7 @@ fn initializeCandidate(allocator: Allocator, vki: InstanceDispatch, candidate: D
         for (propsv) |prop| {
             if (std.mem.eql(u8, prop.extension_name[0..prop.extension_name.len], std.mem.span(extension_name))) {
                 try device_extensions.append(extension_name);
+                break;
             }
         }
     }
@@ -276,8 +280,8 @@ fn initializeCandidate(allocator: Allocator, vki: InstanceDispatch, candidate: D
         .p_queue_create_infos = &qci,
         .enabled_layer_count = 0,
         .pp_enabled_layer_names = undefined,
-        .enabled_extension_count = required_device_extensions.len,
-        .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, &required_device_extensions),
+        .enabled_extension_count = @intCast(u32, device_extensions.items.len),
+        .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, device_extensions.items),
         .p_enabled_features = null,
     }, null);
 }

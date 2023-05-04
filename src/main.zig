@@ -68,7 +68,7 @@ pub fn main() !void {
     const gc = try GraphicsContext.init(allocator, app_name, window);
     defer gc.deinit();
 
-    std.debug.print("Using device: {s}\n", .{gc.deviceName()});
+    std.debug.print("Using device: {?s}\n", .{gc.props.device_name});
 
     var swapchain = try Swapchain.init(&gc, allocator, extent);
     defer swapchain.deinit();
@@ -340,7 +340,7 @@ fn createRenderPass(gc: *const GraphicsContext, swapchain: Swapchain) !vk.Render
         .store_op = .store,
         .stencil_load_op = .dont_care,
         .stencil_store_op = .dont_care,
-        .initial_layout = .@"undefined",
+        .initial_layout = .undefined,
         .final_layout = .present_src_khr,
     };
 

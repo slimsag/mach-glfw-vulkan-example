@@ -9,12 +9,12 @@ pub fn build(b: *std.build.Builder) !void {
     const mode = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{
-        .name = "mach-glfw-vulkan-example", 
-        .root_source_file = .{ .path = "src/main.zig"},
+        .name = "mach-glfw-vulkan-example",
+        .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
-        .optimize = mode
+        .optimize = mode,
     });
-    exe.install();
+    b.installArtifact(exe);
 
     // vulkan-zig: Create a step that generates vk.zig (stored in zig-cache) from the provided vulkan registry.
     const gen = vkgen.VkGenerateStep.create(b, "libs/vulkan-zig/examples/vk.xml");
@@ -34,7 +34,7 @@ pub fn build(b: *std.build.Builder) !void {
     shaders.add("triangle_frag", "shaders/triangle.frag", .{});
     exe.addModule("resources", shaders.getModule());
 
-    const run_cmd = exe.run();
+    const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());
     if (b.args) |args| {
         run_cmd.addArgs(args);

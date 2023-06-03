@@ -20,6 +20,7 @@ const optional_instance_extensions = [_][*:0]const u8{
 const BaseDispatch = vk.BaseWrapper(.{
     .createInstance = true,
     .enumerateInstanceExtensionProperties = true,
+    .getInstanceProcAddr = true,
 });
 
 const InstanceDispatch = vk.InstanceWrapper(.{
@@ -108,8 +109,7 @@ pub const GraphicsContext = struct {
 
     pub fn init(allocator: Allocator, app_name: [*:0]const u8, window: glfw.Window) !GraphicsContext {
         var self: GraphicsContext = undefined;
-        const vk_proc = @ptrCast(vk.PfnGetInstanceProcAddr, &glfw.getInstanceProcAddress);
-        self.vkb = try BaseDispatch.load(vk_proc);
+        self.vkb = try BaseDispatch.load(@ptrCast(vk.PfnGetInstanceProcAddr, &glfw.getInstanceProcAddress));
 
         const glfw_exts = glfw.getRequiredInstanceExtensions() orelse return blk: {
             const err = glfw.mustGetError();
@@ -159,7 +159,7 @@ pub const GraphicsContext = struct {
             .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, instance_extensions.items),
         }, null);
 
-        self.vki = try InstanceDispatch.load(self.instance, vk_proc);
+        self.vki = try InstanceDispatch.load(self.instance, self.vkb.dispatch.vkGetInstanceProcAddr);
         errdefer self.vki.destroyInstance(self.instance, null);
 
         self.surface = try createSurface(self.instance, window);

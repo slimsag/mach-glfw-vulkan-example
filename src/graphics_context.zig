@@ -8,12 +8,9 @@ const required_device_extensions = [_][*:0]const u8{
     vk.extension_info.khr_swapchain.name,
 };
 
-const optional_device_extensions = [_][*:0]const u8{
-    vk.extension_info.khr_portability_subset.name,
-};
+const optional_device_extensions = [_][*:0]const u8{};
 
 const optional_instance_extensions = [_][*:0]const u8{
-    vk.extension_info.khr_portability_enumeration.name,
     vk.extension_info.khr_get_physical_device_properties_2.name,
 };
 
@@ -109,7 +106,7 @@ pub const GraphicsContext = struct {
 
     pub fn init(allocator: Allocator, app_name: [*:0]const u8, window: glfw.Window) !GraphicsContext {
         var self: GraphicsContext = undefined;
-        self.vkb = try BaseDispatch.load(@ptrCast(vk.PfnGetInstanceProcAddr, &glfw.getInstanceProcAddress));
+        self.vkb = try BaseDispatch.load(@as(vk.PfnGetInstanceProcAddr, @ptrCast(&glfw.getInstanceProcAddress)));
 
         const glfw_exts = glfw.getRequiredInstanceExtensions() orelse return blk: {
             const err = glfw.mustGetError();
@@ -134,7 +131,7 @@ pub const GraphicsContext = struct {
                 const len = std.mem.indexOfScalar(u8, &prop.extension_name, 0).?;
                 const prop_ext_name = prop.extension_name[0..len];
                 if (std.mem.eql(u8, prop_ext_name, std.mem.span(extension_name))) {
-                    try instance_extensions.append(@ptrCast([*:0]const u8, extension_name));
+                    try instance_extensions.append(@ptrCast(extension_name));
                     break;
                 }
             }
@@ -145,18 +142,18 @@ pub const GraphicsContext = struct {
             .application_version = vk.makeApiVersion(0, 0, 0, 0),
             .p_engine_name = app_name,
             .engine_version = vk.makeApiVersion(0, 0, 0, 0),
-            .api_version = vk.API_VERSION_1_2,
+            .api_version = vk.makeApiVersion(0, 1, 1, 0),
         };
 
-        self.instance = try self.vkb.createInstance(&.{
+        self.instance = try self.vkb.createInstance(&vk.InstanceCreateInfo{
             .flags = if (builtin.os.tag == .macos) .{
                 .enumerate_portability_bit_khr = true,
             } else .{},
             .p_application_info = &app_info,
             .enabled_layer_count = 0,
             .pp_enabled_layer_names = undefined,
-            .enabled_extension_count = @intCast(u32, instance_extensions.items.len),
-            .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, instance_extensions.items),
+            .enabled_extension_count = @intCast(instance_extensions.items.len),
+            .pp_enabled_extension_names = @ptrCast(instance_extensions.items),
         }, null);
 
         self.vki = try InstanceDispatch.load(self.instance, self.vkb.dispatch.vkGetInstanceProcAddr);
@@ -193,8 +190,8 @@ pub const GraphicsContext = struct {
 
     pub fn findMemoryTypeIndex(self: GraphicsContext, memory_type_bits: u32, flags: vk.MemoryPropertyFlags) !u32 {
         for (self.mem_props.memory_types[0..self.mem_props.memory_type_count], 0..) |mem_type, i| {
-            if (memory_type_bits & (@as(u32, 1) << @truncate(u5, i)) != 0 and mem_type.property_flags.contains(flags)) {
-                return @truncate(u32, i);
+            if (memory_type_bits & (@as(u32, 1) << @as(u5, @truncate(i))) != 0 and mem_type.property_flags.contains(flags)) {
+                return @as(u32, @truncate(i));
             }
         }
 
@@ -223,7 +220,7 @@ pub const Queue = struct {
 
 fn createSurface(instance: vk.Instance, window: glfw.Window) !vk.SurfaceKHR {
     var surface: vk.SurfaceKHR = undefined;
-    if ((glfw.createWindowSurface(instance, window, null, &surface)) != @enumToInt(vk.Result.success)) {
+    if ((glfw.createWindowSurface(instance, window, null, &surface)) != @intFromEnum(vk.Result.success)) {
         return error.SurfaceInitFailed;
     }
 
@@ -280,8 +277,8 @@ fn initializeCandidate(allocator: Allocator, vki: InstanceDispatch, candidate: D
         .p_queue_create_infos = &qci,
         .enabled_layer_count = 0,
         .pp_enabled_layer_names = undefined,
-        .enabled_extension_count = @intCast(u32, device_extensions.items.len),
-        .pp_enabled_extension_names = @ptrCast([*]const [*:0]const u8, device_extensions.items),
+        .enabled_extension_count = @as(u32, @intCast(device_extensions.items.len)),
+        .pp_enabled_extension_names = @as([*]const [*:0]const u8, @ptrCast(device_extensions.items)),
         .p_enabled_features = null,
     }, null);
 }
@@ -359,7 +356,7 @@ fn allocateQueues(vki: InstanceDispatch, pdev: vk.PhysicalDevice, allocator: All
     var present_family: ?u32 = null;
 
     for (families, 0..) |properties, i| {
-        const family = @intCast(u32, i);
+        const family = @as(u32, @intCast(i));
 
         if (graphics_family == null and properties.queue_flags.graphics_bit) {
             graphics_family = family;

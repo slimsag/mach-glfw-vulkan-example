@@ -11,8 +11,5 @@
 
 zig-cache/
 zig-out/
-/release/
-/debug/
-/build/
-/build-*/
-/docgen_tmp/
+shaders/triangle_vert.spv
+shaders/triangle_frag.spv

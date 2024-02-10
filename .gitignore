@@ -11,5 +11,3 @@
 
 zig-cache/
 zig-out/
-shaders/triangle_vert.spv
-shaders/triangle_frag.spv

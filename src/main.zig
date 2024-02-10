@@ -1,10 +1,10 @@
 const std = @import("std");
+const glfw = @import("mach-glfw");
 const vk = @import("vulkan");
-const glfw = @import("glfw");
 const GraphicsContext = @import("graphics_context.zig").GraphicsContext;
 const Swapchain = @import("swapchain.zig").Swapchain;
-const triangle_vert = @embedFile("../shaders/triangle_vert.spv");
-const triangle_frag = @embedFile("../shaders/triangle_frag.spv");
+const triangle_vert = @embedFile("triangle_vert");
+const triangle_frag = @embedFile("triangle_frag");
 const Allocator = std.mem.Allocator;
 
 const app_name = "mach-glfw + vulkan-zig = triangle";
@@ -86,7 +86,7 @@ pub fn main() !void {
     const render_pass = try createRenderPass(&gc, swapchain);
     defer gc.vkd.destroyRenderPass(gc.dev, render_pass, null);
 
-    var pipeline = try createPipeline(&gc, pipeline_layout, render_pass);
+    const pipeline = try createPipeline(&gc, pipeline_layout, render_pass);
     defer gc.vkd.destroyPipeline(gc.dev, pipeline, null);
 
     var framebuffers = try createFramebuffers(&gc, allocator, render_pass, swapchain);

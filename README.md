@@ -1,4 +1,4 @@
-# mach/glfw Vulkan example <a href="https://hexops.com"><img align="right" alt="Hexops logo" src="https://raw.githubusercontent.com/hexops/media/main/readme.svg"></img></a>
+# mach-glfw Vulkan example
 
 This is an example for how to use [mach-glfw](https://github.com/hexops/mach-glfw) and [vulkan-zig](https://github.com/snektron/vulkan-zig) together to create a basic Vulkan window.
 
@@ -25,7 +25,7 @@ cd mach-glfw-vulkan-example
 On MacOS, you may e.g. place the following in your `~/.zprofile` file:
 
 ```sh
-export PATH=$PATH:$HOME/VulkanSDK/1.2.189.0/macOS/bin/
+export PATH=$PATH:$HOME/VulkanSDK/1.3.280.0/macOS/bin/
 ```
 
 ### Run the example
@@ -36,4 +36,4 @@ zig build run
 
 ### Cross compilation
 
-At this time, cross compilation is not possible due to the Vulkan SDK requirement. We're working on this.
+Vulkan requires a fairly heavy-weight SDK, at this time cross compilation is not possible.
